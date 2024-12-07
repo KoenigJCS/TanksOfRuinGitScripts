@@ -1,7 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using Microsoft.Unity.VisualStudio.Editor;
+
 using Unity.VisualScripting;
 using UnityEngine;
 
@@ -22,6 +22,9 @@ public abstract class I_Ammo : MonoBehaviour, I_Item, I_Damage
     public string itemName { get => _itemName; set => _itemName = value; }
     [SerializeField] string _itemBlurb;
     public string itemBlurb { get => _itemBlurb; set => _itemBlurb = value; }
+    [SerializeField] I_Unit _owner;
+    public I_Unit owner { get => _owner; set => _owner = value; }
+    public int height { get => 0; set {} }
 
     public abstract DamageContext OnDamageEvent(); 
 }

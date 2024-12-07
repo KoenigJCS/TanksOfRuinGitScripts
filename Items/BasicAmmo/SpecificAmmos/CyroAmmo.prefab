@@ -13,7 +13,7 @@ GameObject:
   m_Layer: 0
   m_Name: CyroAmmo
   m_TagString: Untagged
-  m_Icon: {fileID: 2800000, guid: 6c63b9603fea18047af2da89a50e6cb1, type: 3}
+  m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
@@ -51,3 +51,4 @@ MonoBehaviour:
   _description: Cryogenic damage that slows enemies down.
   _itemName: Cyro Ammo
   _itemBlurb: Mr Freeze
+  _owner: {fileID: 0}

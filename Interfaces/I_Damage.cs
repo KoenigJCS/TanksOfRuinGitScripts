@@ -26,13 +26,16 @@ public struct DamagePair {
 public struct DamageContext
 {
     public List<DamagePair> damagePairs;
+    public float flankMultplier;
 
-    public DamageContext(List<DamagePair> damagePairs) {
+    public DamageContext(List<DamagePair> damagePairs, float n_flankMultiplier = 1.5f) {
         this.damagePairs = damagePairs;
+        this.flankMultplier = n_flankMultiplier;
     }
 }
 
 public interface I_Damage
 {
+    public int height {get; set;}
     public abstract DamageContext OnDamageEvent();
 }

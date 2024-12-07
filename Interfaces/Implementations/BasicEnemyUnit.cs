@@ -8,6 +8,8 @@ public class BasicEnemyUnit : I_Unit
         if(isOnDisplay) {
             UIManager.inst.SetDisplayUnit(null);
         }
+        AIManager.inst.RemoveUnit(this);
+        AIManager.inst.CheckTeamDead();
         Destroy(this.gameObject);
     }
 
@@ -32,21 +34,9 @@ public class BasicEnemyUnit : I_Unit
 
 
     void Start() {
-        SetHealthBarVis(healthBarActiveState);
-        playerControlled = false;
-        weaponRange = 3;
-        actionPoints = 4;
-        maxActionPoints = 4;
-        transform.position = new Vector3(hexPosition.Position().x,1,hexPosition.Position().y);
-        I_Tile currentTile = TileManager.inst.GetTile(hexPosition);
-        if (currentTile != null)
-        {
-            currentTile.unitOnTile = this;
+        if(prePlacedUnInitiated) {
+            Init();
         }
-        AIManager.inst.AddUnit(this);
-        unitAmmo = Instantiate(ItemManager.inst.basicShell,items).GetComponent<I_Ammo>();
-        unitDamageDeco = unitAmmo;
-        // AddItem(ItemManager.inst.GenerateRandomItem().GetComponent<I_Item>());
     }
     
     void Update() {
@@ -58,15 +48,12 @@ public class BasicEnemyUnit : I_Unit
         }
     }
 
-    void OnDestroy() {
-        AIManager.inst.RemoveUnit(this);
-    }
-
     public override void Fire(I_Unit target) {
         Vector3 enemyDirection = new Vector3(
             target.transform.position.x - transform.position.x, 
             0, 
             target.transform.position.z - transform.position.z).normalized;
+        SoundManager.inst.PlayFire();
         model.transform.forward = enemyDirection;
         target.TakeDamage(CreateDamage(),this);
         target.SetHealthBarVis(true);

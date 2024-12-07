@@ -1,0 +1,83 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1001 &769689290951724758
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 1124327277025399443, guid: 644739baa007cd44692a40e07173f92b, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1124327277025399443, guid: 644739baa007cd44692a40e07173f92b, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: -10
+      objectReference: {fileID: 0}
+    - target: {fileID: 1124327277025399443, guid: 644739baa007cd44692a40e07173f92b, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1124327277025399443, guid: 644739baa007cd44692a40e07173f92b, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1124327277025399443, guid: 644739baa007cd44692a40e07173f92b, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1124327277025399443, guid: 644739baa007cd44692a40e07173f92b, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1124327277025399443, guid: 644739baa007cd44692a40e07173f92b, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1124327277025399443, guid: 644739baa007cd44692a40e07173f92b, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1124327277025399443, guid: 644739baa007cd44692a40e07173f92b, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1124327277025399443, guid: 644739baa007cd44692a40e07173f92b, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3342836837732262024, guid: 644739baa007cd44692a40e07173f92b, type: 3}
+      propertyPath: _rarity
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3342836837732262024, guid: 644739baa007cd44692a40e07173f92b, type: 3}
+      propertyPath: _itemName
+      value: +2 Flank Multiplier
+      objectReference: {fileID: 0}
+    - target: {fileID: 3342836837732262024, guid: 644739baa007cd44692a40e07173f92b, type: 3}
+      propertyPath: _description
+      value: Add 2 flank multiplier
+      objectReference: {fileID: 0}
+    - target: {fileID: 3342836837732262024, guid: 644739baa007cd44692a40e07173f92b, type: 3}
+      propertyPath: _spriteImage
+      value: 
+      objectReference: {fileID: 21300000, guid: c8640b85de272f045940fa3e5e55f9e8, type: 3}
+    - target: {fileID: 3342836837732262024, guid: 644739baa007cd44692a40e07173f92b, type: 3}
+      propertyPath: flankMultiplier
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 4355132169245496171, guid: 644739baa007cd44692a40e07173f92b, type: 3}
+      propertyPath: m_Icon
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 4355132169245496171, guid: 644739baa007cd44692a40e07173f92b, type: 3}
+      propertyPath: m_Name
+      value: GenericFlankDamageMod x2
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 644739baa007cd44692a40e07173f92b, type: 3}

@@ -13,7 +13,7 @@ GameObject:
   m_Layer: 0
   m_Name: PlasmaAmmo
   m_TagString: Untagged
-  m_Icon: {fileID: 2800000, guid: 52f382d9c36bd404484bb55ec3f46a19, type: 3}
+  m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
@@ -51,3 +51,4 @@ MonoBehaviour:
   _description: Plasma damage can set tiles on fire.
   _itemName: Plasma Ammo
   _itemBlurb: Extra Toasty
+  _owner: {fileID: 0}

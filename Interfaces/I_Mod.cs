@@ -1,7 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using Microsoft.Unity.VisualStudio.Editor;
+
 using Unity.VisualScripting;
 using UnityEngine;
 
@@ -20,7 +20,14 @@ public abstract class I_Mod : MonoBehaviour, I_Item, I_DamageDecorator
     public string itemName { get => _itemName; set => _itemName = value; }
     [SerializeField] string _itemBlurb;
     public string itemBlurb { get => _itemBlurb; set => _itemBlurb = value; }
+    [SerializeField] I_Unit _owner;
+    public I_Unit owner { get => _owner; set => _owner = value; }
+    [SerializeField] int _height;
+    public int height {get => _height; set => _height = value; }
 
     public abstract DamageContext OnDamageEvent();
-    public abstract void SetDamageParent(I_Damage n_damage);
+    public abstract bool SetDamageParent(I_Damage n_damage);
+    public abstract void SetDamageBase(I_Damage n_base);
+
+    public abstract I_DamageDecorator RemoveDamageDeco(I_Damage decorator);
 }

@@ -16,8 +16,18 @@ public abstract class I_Unit : MonoBehaviour, I_Item
     public string description { get => _description; set => _description = value; }
     [SerializeField] string _itemBlurb = "The Most Basic Unit";
     public string itemBlurb { get => _itemBlurb; set => _itemBlurb = value; }
+    public I_Unit owner { get => this; set{} }
     protected I_Ammo unitAmmo;
+    public GameObject GetUnitAmmoGO() {
+        return unitAmmo.gameObject;
+    }
     protected I_Damage unitDamageDeco;
+    public I_Mod GetUnitDamageDeco() {
+        if(unitDamageDeco is I_Mod mod) {
+            return mod;
+        }
+        return null;
+    }
     [SerializeField] protected GameObject healthBar;
     [SerializeField] protected GameObject healthBarContainer;
     public GameObject model;
@@ -34,13 +44,16 @@ public abstract class I_Unit : MonoBehaviour, I_Item
             SetModelLayer(value ? 9 : 0); 
             healthBarActiveState = _isSelected;
             SetHealthBarVis(healthBarActiveState);
+            AIManager.inst.ClearTargets();
+            AIManager.inst.HighlightTargets(this,playerControlled);
         }
     }
     public HexCoord hexPosition;
     public int actionPoints;
     public int maxActionPoints;
+    public int firePoints;
+    public int maxFirePoints;
     public bool hasBeenHit;
-    public float flankMultiplier = 1.25f;
     protected bool healthBarActiveState = false;
     public float visHealthBarTimer = 0f;
     [SerializeField] float _health;
@@ -67,10 +80,40 @@ public abstract class I_Unit : MonoBehaviour, I_Item
     public bool playerControlled = true;
     public int weaponRange;
     public bool indirectFire = false;
+    [Header("Debug")]
+    public bool prePlacedUnInitiated = false;
+    public int genNumberOfItems = 0;
+    public void Init() {
+        SetHealthBarVis(healthBarActiveState);
+        actionPoints = maxActionPoints;
+        health = maxHealth;
+        firePoints = maxFirePoints;
+        transform.position = new Vector3(hexPosition.Position().x,1,hexPosition.Position().y);
+        if(playerControlled) {
+            PlayerManager.inst.AddUnit(this);
+        } else {
+            AIManager.inst.AddUnit(this);
+        }
+        I_Tile currentTile = TileManager.inst.GetTile(hexPosition);
+        if (currentTile != null)
+        {
+            currentTile.unitOnTile = this;
+        }
+        unitAmmo = Instantiate(ItemManager.inst.basicShell,items).GetComponent<I_Ammo>();
+        unitAmmo.owner = this;
+        unitDamageDeco = unitAmmo;
+        for(int i = 0; i<genNumberOfItems;i++) {
+            AddItem(ItemManager.inst.GenerateRandomItem(true));
+        }
+
+    }
     public abstract void Move(HexCoord dest);
     public abstract void Fire(I_Unit target);
+    
+    // TakeDamage function written by Tommy Smith
     public virtual void TakeDamage(I_Damage damage, I_Unit damageSource) {
         DamageContext damageContext = damage.OnDamageEvent();
+        
         if (!hasBeenHit)
         {
             Vector3 direction = new Vector3(
@@ -78,33 +121,20 @@ public abstract class I_Unit : MonoBehaviour, I_Item
                 0, 
                 damageSource.transform.position.z - model.transform.position.z).normalized;
             model.transform.forward = direction;
-            hasBeenHit = true;
-            foreach (var damagePart in damageContext.damagePairs)
-            {
-                health -= damagePart.damage;
-                print("Damage is of Type:" + damagePart.damageType);
-            }
-        }else{
-            if (IsFlanked(damageSource))
-            {
-                foreach (var damagePart in damageContext.damagePairs)
-                {
-                    health -= damagePart.damage * flankMultiplier;
-                    print("FLANKED; Damage is of Type:"+damagePart.damageType);
-                }
-            }else{
-                foreach (var damagePart in damageContext.damagePairs)
-                {
-                    health -= damagePart.damage;
-                    print("Damage is of Type:" + damagePart.damageType);
-                } 
-            }
         }
+        float damageScalar = IsFlanked(damageSource) ? damageContext.flankMultplier: 1f;
+        foreach (var damagePart in damageContext.damagePairs)
+        {
+            health -= damagePart.damage * damageScalar;
+            print("Damage is of Type: " + damagePart.damageType+" Multiplied by: "+damageScalar);
+        }
+        hasBeenHit = true;
     }
     public void SetHealthBarVis(bool state) {
         healthBarContainer.SetActive(state);
     }
 
+    // IsFlanked function written by Tommy Smith
     public bool IsFlanked(I_Unit attacker) {
         if (!hasBeenHit)
         {
@@ -126,12 +156,57 @@ public abstract class I_Unit : MonoBehaviour, I_Item
     }
 
     public abstract void Die();
-
-    public void AddItem(I_Item n_Item) {
+    public void RemoveItem(GameObject n_ItemGO) {
+        if(n_ItemGO==null) {
+            return;
+        }
+        I_Item n_Item = n_ItemGO.GetComponent<I_Item>(); 
         if(n_Item is I_Mod mod) {
-            mod.SetDamageParent(unitDamageDeco);
+            if((UnityEngine.Object)unitDamageDeco == unitAmmo) {
+                return;
+            }
+            if(mod == (I_Mod)unitDamageDeco) {
+                unitDamageDeco = mod.damage;
+                ItemManager.inst.TakeBackItem(mod.gameObject);
+                return;
+            }
+            I_DamageDecorator target = ((I_Mod)unitDamageDeco).RemoveDamageDeco(mod);
+            if(target==null) {
+                return;
+            }
+            ItemManager.inst.TakeBackItem(mod.gameObject);
+
+        } else if (n_Item is I_Ammo ammo && ammo == unitAmmo) {
+            ItemManager.inst.TakeBackItem(unitAmmo.gameObject);
+            AddItem(Instantiate(ItemManager.inst.basicShell,items));
+        }
+    }
+
+    public void AddItem(GameObject n_ItemGO) {
+        I_Item n_Item = n_ItemGO.GetComponent<I_Item>(); 
+        if(n_Item is I_Mod mod) {
+            if(!mod.SetDamageParent(unitDamageDeco)) {
+                ItemManager.inst.TakeBackItem(n_ItemGO);
+                return;
+            }
+            n_Item.owner = this;
             mod.transform.parent = items;
             unitDamageDeco = mod;
+        } else if (n_Item is I_Ammo ammo) {
+            if(unitAmmo is BasicAmmo) {
+                Destroy(unitAmmo.gameObject);
+                unitAmmo = null;
+            } else {
+                ItemManager.inst.TakeBackItem(unitAmmo.gameObject);
+            }
+            if(unitDamageDeco is I_DamageDecorator deco) {
+                deco.SetDamageBase(ammo);
+            } else {
+                unitDamageDeco = ammo;
+            }
+            n_Item.owner = this;
+            unitAmmo = ammo;
+            ammo.transform.parent = items;
         }
     }
 }

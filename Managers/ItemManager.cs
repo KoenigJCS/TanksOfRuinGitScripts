@@ -15,66 +15,101 @@ public class ItemManager : MonoBehaviour
     }
     public GameObject basicShell;
     
-    [SerializeField] SerializedDictionary<Rarity, ListWrapper> itemPrefabStorage;
-    public List<GameObject> rewardItems = new();
+    // [SerializeField] SerializedDictionary<Rarity, ListWrapper> itemPrefabStorage;
+    [SerializeField] Matrix<GameObject> itemPrefabs;
     [SerializeField] Transform itemBucket;
     Random random = new();
 
-    public List<I_Item> playerItems = new();
+    public List<GameObject> playerItems = new();
+    public List<ItemDisplay> unitDisplays = new();
+    public List<ItemDisplay> invDisplays = new();
+    public List<ItemDisplay> rewardDisplays = new();
+    [SerializeField] Transform invTransform;
+    [SerializeField] GameObject invFramePrefab;
 
-    void OnValidate()
+    void Start()
     {
-        if(itemPrefabStorage.IsUnityNull()) {
-            itemPrefabStorage = new()
-            {
-                { Rarity.Common, new() },
-                { Rarity.Uncommon, new() },
-                { Rarity.Rare, new() },
-                { Rarity.Mythic, new() },
-                { Rarity.Legendary, new() }
-            };
+        NormalizeRarityWeights();
+        UpdateUnitDisplays();
+        for(int i=0;i<32;i++) {
+            GameObject disp = Instantiate(invFramePrefab,invTransform);
+            disp.name = disp.name+" "+i;
+            ItemDisplay itemDisplay = disp.GetComponent<ItemDisplay>();
+            itemDisplay.order = i;
+            invDisplays.Add(itemDisplay);
+
         }
     }
 
     public void ObtainRewardItem(GameObject newItem) {
-        if(rewardItems.Contains(newItem)) {
-            rewardItems.Remove(newItem);
+        GameObject item = Instantiate(newItem,itemBucket);
+        playerItems.Add(item);
+    }
+
+    public void TakeBackItem(GameObject item) {
+        item.transform.parent = itemBucket;
+        item.GetComponent<I_Item>().owner = null;
+    }
+
+    public void UpdateUnitDisplays() {
+        for(int i = 0; i<unitDisplays.Count;i++) {
+            unitDisplays[i].SetDisplay(null);
         }
-        for (int i = 0; i < rewardItems.Count; i++)
+        List<GameObject> units = new();
+        foreach (GameObject item in playerItems)
         {
-            Destroy(rewardItems[i]);
+            //Replace this with tags at some point
+            if(item.TryGetComponent<I_Unit>(out _)) {
+                units.Add(item);
+            }
         }
-        rewardItems.Clear();
-        playerItems.Add(newItem.GetComponent<I_Item>());
+        unitDisplays.Sort();
+        for(int i = 0; i<unitDisplays.Count;i++) {
+            if(i<units.Count) {
+                unitDisplays[i].SetDisplay(units[i]);
+            } else {
+                break;
+            }
+        }
     }
 
     [SerializeReference] float[] rarityWeights = new float[5];
-    
-    public GameObject GenerateRandomItem(bool rewardFlag= true) {
+    float[] normalizedRarityWeights = new float[5];
+
+    public void NormalizeRarityWeights() {
         float sum = 0f;
         float before = 0f;
-        float[] normalizedRarityWeights = new float[5];
         for(int i = 0; i<rarityWeights.Length;i++) {
             sum+=rarityWeights[i]; 
         }
-        if(sum!=0) {
-            for(int i = 0; i<rarityWeights.Length;i++) {
-                normalizedRarityWeights[i]=(rarityWeights[i]/sum)+before; 
-                before = normalizedRarityWeights[i];
-            }
-            double luckValue = random.NextDouble();
-            for(int i = 0; i<rarityWeights.Length;i++) {
-                if(luckValue<normalizedRarityWeights[i]) {
-                    GameObject prefabItem = itemPrefabStorage[(Rarity)i].objects[random.Next()%itemPrefabStorage[(Rarity)i].objects.Count];
-                    GameObject newItem = Instantiate(prefabItem,itemBucket);
-                    if(rewardFlag) {
-                        rewardItems.Add(newItem);
-                    }
-                    return newItem;
+        if(sum == 0) {
+            Debug.LogError("Rarity Weights Inccorect");
+            return;
+        }
+        for(int i = 0; i<rarityWeights.Length;i++) {
+            normalizedRarityWeights[i]=(rarityWeights[i]/sum)+before; 
+            before = normalizedRarityWeights[i];
+        }
+    }
+    
+    public GameObject GenerateRandomItem(bool instantiate = false) {
+        double luckValue = random.NextDouble();
+        Debug.Log("Rarity Weights Length: "+ rarityWeights.Length);
+        Debug.Log("itemPrefabs[0] Length: "+ itemPrefabs[0].cells.Count);
+        Debug.Log("itemPrefabs Length: "+ itemPrefabs.arrays.Count);
+        for(int i = 0; i<rarityWeights.Length;i++) {
+            Debug.Log(luckValue);
+            Debug.Log(normalizedRarityWeights[i]);
+            if(luckValue<normalizedRarityWeights[i]) {
+                GameObject item = itemPrefabs[i,random.Next()%itemPrefabs[i].cells.Count];
+                if(instantiate){
+                    item = Instantiate(item,itemBucket);
+                    playerItems.Add(item);
                 }
+                return item;
             }
         }
-        Debug.LogError("What");
+        Debug.LogError("Item Failed to Generate");
         return null;
     }
 

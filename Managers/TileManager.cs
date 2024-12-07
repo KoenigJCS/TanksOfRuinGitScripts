@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using Settworks.Hexagons;
 using System;
+using Unity.Mathematics;
 
 public class TileManager : MonoBehaviour {
     [SerializeField] I_Tile[,] gameTiles;
@@ -14,14 +15,42 @@ public class TileManager : MonoBehaviour {
     [SerializeField] List<GameObject> tilePallette;
     int qMin = 0;
     int qMax = int.MinValue;
+    [SerializeField] int currentMapID = 0;
+    [SerializeField] int[,] tileArray;
+    [Header("Debug")]
+    [SerializeField] bool saveTempMap = false;  
+    [SerializeField] bool randomMap = true;
+    [SerializeField] Matrix<int> tempMap = new();
+    // {
+    //     {1,1,1,1,1,2,2,2,3,1,1},
+    //     {1,1,1,1,1,3,2,3,1,1,1},
+    //     {1,1,1,1,1,3,3,1,1,1,1},
+    //     {2,3,3,1,1,1,2,2,2,3,2},
+    //     {2,2,3,1,1,1,2,2,3,3,3},
+    //     {1,2,2,1,1,1,3,1,3,3,1},
+    //     {1,1,2,2,1,1,1,3,1,1,1},
+    //     {1,1,2,2,1,1,3,3,1,1,1},
+    //     {1,1,1,1,1,1,3,1,1,1,1},
+    //     {1,1,1,1,1,3,3,1,1,3,1},
+    //     {1,1,1,1,3,3,1,1,3,3,3}
+    // };
     void Awake() {
         inst = this;
     }
 
     void Start()
     {
-        gameTiles = new I_Tile[tileWidth,tileHeight];
+        if(saveTempMap) {
+            SaveMap();
+        }
         GenerateMap();
+    }
+
+    public void SaveMap() {
+        if(tempMap == null) {
+            return;
+        }
+        SaveManager.inst.SetTileSave(new(tempMap,tempMap.arrays.Count, tempMap.arrays[0].cells.Count),currentMapID);
     }
 
     // Using Hex Coordinates
@@ -57,42 +86,37 @@ public class TileManager : MonoBehaviour {
         return true;
     }
 
+
     public void GenerateMap() {
-        // Read in from map data??
+        // Read in from map data
 
         Vector3 pos = Vector3.zero;
+        int id = currentMapID;
+        if(randomMap) {
+            System.Random rand = new();
+            // Update this lmao;
+            id = rand.Next() % 4;
+        }
         
         // Used to create the map. 1 = Plains, 2 = Forest, 3 = Mountain.
-        int[] tileArray = new int[]
-        {
-            1,1,1,1,1,2,2,2,3,1,1,
-            1,1,1,1,1,3,2,3,1,1,1,
-            1,1,1,1,1,3,3,1,1,1,1,
-            2,3,3,1,1,1,2,2,2,3,2,
-            2,2,3,1,1,1,2,2,3,3,3,
-            1,2,2,1,1,1,3,1,3,3,1,
-            1,1,2,2,1,1,1,3,1,1,1,
-            1,1,2,2,1,1,3,3,1,1,1,
-            1,1,1,1,1,1,3,1,1,1,1,
-            1,1,1,1,1,3,3,1,1,3,1,
-            1,1,1,1,3,3,1,1,3,3,3
-        };
-        
-        int numTile = 0;
+        TileSetSave tileSetSave = SaveManager.inst.GetTileSave(id);
+        gameTiles = new I_Tile[tileSetSave.width,tileSetSave.height];
+        tileWidth = tileSetSave.width;
+        tileHeight = tileSetSave.height;
         
         qMax = tileWidth;
         qMin = 0;
 
-        for(int q = 0; q < tileWidth; q++){
+        for(int q = 0, i=0; q < tileWidth; q++){
             int qOff = q >> 1;
-            for (int r = -qOff; r < tileHeight - qOff; r++){
+            for (int r = -qOff,j=0; r < tileHeight - qOff; r++){
                 HexCoord coord = new HexCoord(q, r);
                 
                 pos.x = coord.Position().x;
                 pos.z = coord.Position().y;
 
                 GameObject tile = Instantiate(
-                    tilePallette[tileArray[numTile]],
+                    tilePallette[tileSetSave.tiles[i,j]],
                     pos + (q * Mathf.Abs(r) % 4 * 0.1f * Vector3.up),
                     Quaternion.identity,
                     tileContainer
@@ -103,11 +127,9 @@ public class TileManager : MonoBehaviour {
                 tile.transform.localScale = Vector3.one * 2;
 
                 gameTiles[q, r + qOff] = tile.GetComponent<I_Tile>();
-
-                if (numTile < tileArray.Length - 1) {
-                    numTile++;
-                }
+                j++;
             }
+            i++;
         }
     }
 }

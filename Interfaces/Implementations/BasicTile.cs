@@ -1,6 +1,6 @@
 using Settworks.Hexagons;
 using UnityEngine;
-using UnityEngine.WSA;
+
 
 public class BasicTile : I_Tile
 {

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using Settworks.Hexagons;
 using Unity.VisualScripting;
 using UnityEngine;
@@ -8,9 +9,11 @@ public class PlayerManager : MonoBehaviour
 {
     public static PlayerManager inst;
     [SerializeField] List<I_Unit> units; 
+    private Dictionary<HexCoord, int> reachableTiles;
     public List<I_Unit> Units { get { return units; } }
     I_Unit selectedUnit;
     bool playerTurn = true;
+    public bool uILock = false;
     void Awake() {
         inst = this;
     }
@@ -33,6 +36,7 @@ public class PlayerManager : MonoBehaviour
         playerTurn=true;
         foreach (I_Unit unit in units) {
             unit.actionPoints = unit.maxActionPoints;
+            unit.firePoints = unit.maxFirePoints;
             unit.hasBeenHit = false;
         }
     }
@@ -42,6 +46,9 @@ public class PlayerManager : MonoBehaviour
     }
 
     public void EndTurn(bool certain) {
+        if(uILock) {
+            return;
+        }
         if(certain) {
             playerTurn=false;
             SelectUnit(null);
@@ -66,42 +73,52 @@ public class PlayerManager : MonoBehaviour
         }
         return false;
     }
-
     public void SelectUnit(I_Unit unit) {
         if(selectedUnit) {
             selectedUnit.isSelected=false;
+            reachableTiles = null;
         }
         selectedUnit = unit;
         if(!unit) return;
 
         unit.isSelected=true;
-        AIManager.inst.ClearTargets();
-        AIManager.inst.HighlightTargets(unit);
+
+        reachableTiles = Pathfinding.inst.FindReachableTiles(unit.hexPosition, unit.actionPoints,unit,unit.playerControlled);
     }
 
+
     public void Update() {
-        if (playerTurn && Input.GetMouseButtonDown (0)) { 
+        if (playerTurn &&  !uILock && Input.GetMouseButtonDown (0)) { 
             RaycastHit hit; 
             Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition); 
             bool hasHit = Physics.Raycast (ray,out hit, 100.0f);
             if (hasHit) { 
                 I_Unit unit;
                 if(EventSystem.current.IsPointerOverGameObject()) {
-                    
+                    // UI interactions
                 } else if(
                     hit.transform!=null 
                     && (unit = hit.transform.gameObject.GetComponent<I_Unit>())
                     || (unit = UnitAt(HexCoord.AtPosition(new(hit.point.x,hit.point.z))))
                 ) { 
                     UIManager.inst.SetDisplayUnit(unit);
-                    if(selectedUnit && !unit.playerControlled) {
+                    if(selectedUnit && !unit.playerControlled && AIManager.inst.FindTargets(selectedUnit,true).Contains(unit) && selectedUnit.firePoints>0) {
+                        selectedUnit.firePoints--;
                         selectedUnit.Fire(unit);
                         SelectUnit(null);
-                    } else if(unit.playerControlled) {
+                    } else if(unit.playerControlled && (unit.actionPoints>0 || unit.firePoints>0)) {
                         SelectUnit(unit);
                     }
                 } else if(selectedUnit && selectedUnit.playerControlled) {
-                    selectedUnit.Move(HexCoord.AtPosition(new(hit.point.x,hit.point.z)));
+                    HexCoord clickedCoord = HexCoord.AtPosition(new(hit.point.x,hit.point.z));
+                    if (reachableTiles != null && reachableTiles.ContainsKey(clickedCoord))
+                    {
+                        MoveUnit(selectedUnit, clickedCoord, true);
+                    }
+                    else
+                    {
+                        SoundManager.inst.PlayBadButton();
+                    }
                 } else {
                     UIManager.inst.SetDisplayUnit(null);
                 }
@@ -110,6 +127,23 @@ public class PlayerManager : MonoBehaviour
             }
         }
     }
+
+    private void MoveUnit(I_Unit unit, HexCoord dest,bool playerTeam)
+    {
+        int moveCost = reachableTiles[dest];
+        if (unit.actionPoints >= moveCost)
+        {
+            unit.Move(dest);
+            unit.actionPoints -= moveCost;
+            
+            reachableTiles = Pathfinding.inst.FindReachableTiles(unit.hexPosition, unit.actionPoints, unit,playerTeam);
+        }
+    }
+
+    public void HighlightReachableTiles() {
+        //Todo
+    }
+
 
     public I_Unit UnitAt(HexCoord pos) {
         foreach (I_Unit unit in units) {
