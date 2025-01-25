@@ -79,11 +79,15 @@ public class PlayerManager : MonoBehaviour
             reachableTiles = null;
         }
         selectedUnit = unit;
-        if(!unit) return;
+        if(!unit) {
+            TileManager.inst.HighlightTiles(null);
+            return;
+        }
 
         unit.isSelected=true;
 
         reachableTiles = Pathfinding.inst.FindReachableTiles(unit.hexPosition, unit.actionPoints,unit,unit.playerControlled);
+        TileManager.inst.HighlightTiles(reachableTiles.Keys.ToList());
     }
 
 
@@ -137,11 +141,8 @@ public class PlayerManager : MonoBehaviour
             unit.actionPoints -= moveCost;
             
             reachableTiles = Pathfinding.inst.FindReachableTiles(unit.hexPosition, unit.actionPoints, unit,playerTeam);
+            TileManager.inst.HighlightTiles(reachableTiles.Keys.ToList());
         }
-    }
-
-    public void HighlightReachableTiles() {
-        //Todo
     }
 
 

@@ -74,7 +74,7 @@ public abstract class I_Unit : MonoBehaviour, I_Item
         }
     }
     public void SetModelLayer(int layer) {
-        model.layer = layer;
+        UIManager.inst.SetLayerAllChildren(model.transform,layer);
     }
     public float maxHealth;
     public bool playerControlled = true;

@@ -144,13 +144,16 @@ public class ItemDisplay : MonoBehaviour, IComparable<ItemDisplay>
         displayUnit = newDisplayUnit;
         newDisplayUnit.isOnDisplay=true;
         unitModel = Instantiate(displayUnit.model,holder.transform);
-        unitModel.layer = 11;
+        // unitModel.layer = 11;
+        UIManager.inst.SetLayerAllChildren(unitModel.transform,11);
         unitModel.transform.localScale = Vector3.one*12;
         unitModel.transform.localPosition = unitModel.transform.localPosition+(Vector3.down*9);
         itemName.text = "<color=\""+I_Item.rarityColor[displayUnit.rarity]+"\">"+displayUnit.itemName+"</color>";
         itemBlurb.text = displayUnit.itemBlurb;
         itemDetailsText.text = displayUnit.description;
     }
+
+
 
     public void RefreshText() {
         itemName.text = "<color=\""+I_Item.rarityColor[displayItem.rarity]+"\">"+displayItem.itemName+"</color>";

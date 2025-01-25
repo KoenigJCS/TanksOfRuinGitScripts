@@ -144,7 +144,8 @@ public class UIManager : MonoBehaviour
         newDisplayUnit.isOnDisplay=true;
         unitDetailDisplay.SetActive(true);
         unitModel = Instantiate(displayUnit.model,unitHolder);
-        unitModel.layer = 11;
+        // unitModel.layer = 11;
+        UIManager.inst.SetLayerAllChildren(unitModel.transform,11);
         unitModel.transform.localScale = Vector3.one*16;
         unitModel.transform.localPosition = unitModel.transform.localPosition+(Vector3.down*9);
         pivotpos = unitModel.transform.localPosition;
@@ -153,5 +154,15 @@ public class UIManager : MonoBehaviour
         unitDetailsText.text = "Health: " + Mathf.RoundToInt(displayUnit.health/displayUnit.maxHealth*100) +"%\n" +
                                 "Action Points: " + displayUnit.actionPoints+"/"+displayUnit.maxActionPoints + "\n"
                                 +"Fire Points: " + displayUnit.firePoints+"/"+displayUnit.maxFirePoints;
+    }
+
+    public void SetLayerAllChildren(Transform root, int layer)
+    {
+        var children = root.GetComponentsInChildren<Transform>(includeInactive: true);
+        foreach (var child in children)
+        {
+//            Debug.Log(child.name);
+            child.gameObject.layer = layer;
+        }
     }
 }

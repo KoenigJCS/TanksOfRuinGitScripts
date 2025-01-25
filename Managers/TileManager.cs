@@ -34,6 +34,79 @@ public class TileManager : MonoBehaviour {
     //     {1,1,1,1,1,3,3,1,1,3,1},
     //     {1,1,1,1,3,3,1,1,3,3,3}
     // };
+    public List<GameObject> moveHighlightTiles = new();
+    [SerializeField] GameObject moveHighlightPrefab;
+    [SerializeField] Transform highlightBucket;
+    [SerializeField] LineRenderer edgeLineRenderer;
+    public void HighlightTiles(List<HexCoord> tiles) {
+        foreach (GameObject hTile in moveHighlightTiles) {
+            Destroy(hTile);
+        }
+        if(tiles==null) {
+            // edgeLineRenderer.positionCount=0;
+            return;
+        }
+        List<Vector2> edges = new();
+        List<float> angles = new();
+        // List<HexCoord> coveredEdges = new();
+        float maxHeight = 0;
+        foreach (var tile in tiles) {
+            int neighborNumb = 0;
+            foreach (HexCoord neighbor in tile.Neighbors()) {
+                if(!IsOnTile(neighbor) || !tiles.Contains(neighbor)) {
+                    Vector2 tempC1= tile.Corner((neighborNumb-1)%6);
+                    float height1 = (tile.q * Mathf.Abs(tile.r) % 4 * 0.1f) + 0.1f;
+                    float height2 = (neighbor.q * Mathf.Abs(neighbor.r) % 4 * 0.1f) + 0.1f;
+                    height1 = height1 > height2 ? height1 : height2;
+                    if(height1>maxHeight) {
+                        maxHeight=height1;
+                        // edges.Add(new Vector3(edges[^1].x,height1,edges[^1].z));
+                    }
+                    Vector2 tempC2= tile.Corner(neighborNumb%6);
+                    Vector3 center = tempC2+((tempC1-tempC2)/2);
+                    angles.Add(Mathf.Atan2(tempC1.x-tempC2.x,tempC1.y-tempC2.y+0.001f)*Mathf.Rad2Deg);
+                    edges.Add(center);
+                    // edges.Add(new Vector3(tempC.x,height1,tempC.y));
+                    // height=height1;
+                }
+                neighborNumb++;
+            }
+        }
+        // edgeLineRenderer.positionCount=edges.Count;
+        // edgeLineRenderer.SetPositions(edges.ToArray());
+        for (int i = 0;i < edges.Count;i++) {
+            GameObject temp = Instantiate(
+                moveHighlightPrefab,
+                new (edges[i].x,maxHeight,edges[i].y),
+                Quaternion.Euler(0,angles[i],0),
+                highlightBucket
+            );
+            moveHighlightTiles.Add(temp);
+        }
+    }
+        // foreach (var tile in tiles) {
+        //     Vector3 pos = new()
+        //     {
+        //         x = tile.Position().x,
+        //         z = tile.Position().y
+        //     };
+
+        //     // GameObject tile = Instantiate(
+        //     //         tilePallette[tileSetSave.tiles[i,j]],
+        //     //         pos + (q * Mathf.Abs(r) % 4 * 0.1f * Vector3.up),
+        //     //         Quaternion.identity,
+        //     //         tileContainer
+        //     //     );
+        //     GameObject temp = Instantiate(
+        //         moveHighlightPrefab,
+        //         pos + (tile.q * Mathf.Abs(tile.r) % 4 * 0.2f *+0.4f * Vector3.up),
+        //         Quaternion.identity,
+        //         highlightBucket
+        //     );
+        //     moveHighlightTiles.Add(temp);
+        // }
+    // }
+
     void Awake() {
         inst = this;
     }
