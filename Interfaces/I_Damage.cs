@@ -3,15 +3,14 @@ using UnityEngine;
 
 public enum DamageType
 {
-    Nuclear,
-    Railgun,
-    HEAT,
-    Flame,
-    HighExplosive,
-    Shrapnel,
-    Plasma,
-    Cryo,
-    Solid,
+    Nuclear, //damage over time
+    Railgun, //super high damage
+    Flame, //sets tiles on fire
+    HighExplosive, //blast radius
+    Shrapnel, //chance to jam enemy gun
+    Plasma, //unlimited range
+    Cryo, //slows target
+    Solid, //default
 }
 
 public struct DamagePair {

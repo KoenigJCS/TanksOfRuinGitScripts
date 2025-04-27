@@ -4,16 +4,17 @@ using UnityEngine;
 
 public class MountainTile : I_Tile
 {
+    public override float CheckProtection(I_Damage damage, I_Unit damageSource) {
+        return 1;
+    }
     // Note OnMoveOver Should be triggered even if the unit stops on the tile
-    public override void OnMoveOver()
-    {
+    public override void OnMoveOver(I_Unit _) {
         
     }
 
     
-    public override void OnStopOn()
-    {
-        print("Stopped on: "+transform.position);
+    public override void OnStopOn(I_Unit _) {
+        
     }
 
     void Start()

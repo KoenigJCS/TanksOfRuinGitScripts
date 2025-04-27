@@ -1,1 +1,11 @@
-P4_T31.zip
+# Compiled source #
+###################
+*.meta
+/*.meta
+*\*\*.meta
+*.cs.meta
+*\*\*.cs.meta
+*.prefab
+**/*.prefab
+**/*.prefab
+Items/BasicAmmo/SpecificAmmos/*.prefab

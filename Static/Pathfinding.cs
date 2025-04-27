@@ -6,28 +6,22 @@ using UnityEngine;
 using Settworks.Hexagons;
 using System;
 
-public class Pathfinding : MonoBehaviour
+public static class Pathfinding
 {
-    public static Pathfinding inst;
-
-    void Awake()
+    public static List<HexCoord> FindPath(HexCoord startHex, HexCoord targetHex, bool playerTeam)
     {
-        inst = this;
-    }
-
-    public List<HexCoord> FindPath(HexCoord startHex, HexCoord targetHex, I_Unit unit, bool playerTeam)
-    {
-        Debug.Log($"[Pathfinding] Finding path from {startHex} to {targetHex} for unit {unit.name}");
+        Debug.Log($"[Pathfinding] Finding path from {startHex} to {targetHex}");
+        
 
         if (!TileManager.inst.IsOnTile(startHex))
         {
-            Debug.LogError($"[Pathfinding] Start hex {startHex} is not on the grid.");
+            // Debug.LogError($"[Pathfinding] Start hex {startHex} is not on the grid.");
             return new List<HexCoord>();
         }
 
         if (!TileManager.inst.IsOnTile(targetHex))
         {
-            Debug.LogError($"[Pathfinding] Target hex {targetHex} is not on the grid.");
+            // Debug.LogError($"[Pathfinding] Target hex {targetHex} is not on the grid.");
             return new List<HexCoord>();
         }
 
@@ -66,7 +60,7 @@ public class Pathfinding : MonoBehaviour
 
             if (currentNode.hexCoord == targetHex)
             {
-                Debug.Log("[Pathfinding] Path found!");
+                // Debug.Log("[Pathfinding] Path found!");
                 return RetracePath(startNode, currentNode);
             }
 
@@ -83,14 +77,14 @@ public class Pathfinding : MonoBehaviour
                     continue;
                 }
                 
-                bool isOccupiedByEnemy = neighborTile.unitOnTile != null && neighborTile.unitOnTile.playerControlled == unit.playerControlled && neighborTile.unitOnTile != unit;
+                bool isOccupiedByEnemy = neighborTile.unitOnTile != null && neighborTile.unitOnTile.playerControlled == playerTeam && neighborTile != TileManager.inst.GetTile(startHex);
 
                 if (isOccupiedByEnemy && neighborHex == targetHex)
                 {
                     continue;
                 }
 
-                if (neighborTile.unitOnTile != null && neighborTile.unitOnTile.playerControlled != playerTeam && neighborTile.unitOnTile != unit)
+                if (neighborTile.unitOnTile != null && neighborTile.unitOnTile.playerControlled != playerTeam && neighborTile != TileManager.inst.GetTile(startHex))
                 {
                     continue;
                 }
@@ -119,36 +113,7 @@ public class Pathfinding : MonoBehaviour
                 }
 
                 Node parentNode = currentNode.parent != null ? currentNode.parent : currentNode;
-                /*if (LineOfSight(parentNode.hexCoord, neighborHex, unit))
-                {
-                    float newGCost = parentNode.gCost + HexCoord.Distance(parentNode.hexCoord, neighborHex);
-                    if (newGCost < neighborNode.gCost)
-                    {
-                        neighborNode.gCost = newGCost;
-                        neighborNode.parent = parentNode;
-                        neighborNode.hCost = HexCoord.Distance(neighborHex, targetHex);
-
-                        if (!openList.Contains(neighborNode))
-                        {
-                            openList.Add(neighborNode);
-                        }
-                    }
-                }
-                else
-                {
-                    float newGCost = currentNode.gCost + HexCoord.Distance(currentNode.hexCoord, neighborHex);
-                    if (newGCost < neighborNode.gCost)
-                    {
-                        neighborNode.gCost = newGCost;
-                        neighborNode.parent = currentNode;
-                        neighborNode.hCost = HexCoord.Distance(neighborHex, targetHex);
-
-                        if (!openList.Contains(neighborNode))
-                        {
-                            openList.Add(neighborNode);
-                        }
-                    }
-                }*/
+                
                 float newGCost = currentNode.gCost + HexCoord.Distance(currentNode.hexCoord, neighborHex);
                 if (newGCost < neighborNode.gCost)
                 {
@@ -164,20 +129,11 @@ public class Pathfinding : MonoBehaviour
             }
         }
 
-        Debug.LogWarning($"[Pathfinding] No path found from {startHex} to {targetHex} for unit {unit.name}.");
+        Debug.LogWarning($"[Pathfinding] No path found from {startHex} to {targetHex}");
         return new List<HexCoord>();
     }
-    
-    // alternate function; Calculates the distance between two hex coordinates.
-    // float HexCoord.Distance(HexCoord a, HexCoord b)
-    // {
-    //     int deltaQ = Mathf.Abs(a.q - b.q);
-    //     int deltaR = Mathf.Abs(a.r - b.r);
 
-    //     return (deltaQ + deltaR);
-    // }
-
-    List<HexCoord> RetracePath(Node startNode, Node endNode)
+    static List<HexCoord> RetracePath(Node startNode, Node endNode)
     {
         List<HexCoord> path = new List<HexCoord>();
         Node currentNode = endNode;
@@ -193,11 +149,11 @@ public class Pathfinding : MonoBehaviour
             }
         }
         path.Reverse();
-        Debug.Log($"[Pathfinding] Path retraced: {string.Join(" -> ", path)}");
+        // Debug.Log($"[Pathfinding] Path retraced: {string.Join(" -> ", path)}");
         return path;
     }
     
-    public bool LineOfSight(HexCoord from, HexCoord to, I_Unit unit, bool playerTeam)
+    public static bool LineOfSight(HexCoord from, HexCoord to, I_Unit firingUnit, I_Unit targetUnit, bool playerTeam)
     {
         List<HexCoord> line = GetHexesOnLine(from, to);
         foreach (HexCoord hex in line)
@@ -209,28 +165,28 @@ public class Pathfinding : MonoBehaviour
             I_Tile tile = TileManager.inst.GetTile(hex);
             if (tile == null)
             {
-                Debug.Log($"[LineOfSight] Tile at {hex} is null.");
+                // Debug.Log($"[LineOfSight] Tile at {hex} is null.");
                 return false;
             }
 
-            if (tile.moveCost >= 100)
+            if (tile.moveCost >= 100 && !firingUnit.indirectFire)
             {
-                Debug.Log($"[LineOfSight] Tile at {hex} is impassable (moveCost >= 100).");
+                // Debug.Log($"[LineOfSight] Tile at {hex} is impassable (moveCost >= 100).");
                 return false;
             }
 
-            if (tile.unitOnTile != null && playerTeam != tile.unitOnTile.playerControlled && tile.unitOnTile != unit)
+            if (!firingUnit.indirectFire && tile.unitOnTile != null && playerTeam != tile.unitOnTile.playerControlled && tile.unitOnTile != targetUnit)
             {
-                Debug.Log($"[LineOfSight] Tile at {hex} is occupied by {tile.unitOnTile.name}.");
+                // Debug.Log($"[LineOfSight] Tile at {hex} is occupied by {tile.unitOnTile.name}.");
                 return false;
             }
         }
-        Debug.Log($"[LineOfSight] Line of sight clear from {from} to {to}.");
+        // Debug.Log($"[LineOfSight] Line of sight clear from {from} to {to}.");
         return true;
     }
 
     
-    private List<HexCoord> GetHexesOnLine(HexCoord start, HexCoord end)
+    private static List<HexCoord> GetHexesOnLine(HexCoord start, HexCoord end)
     {
         int N = HexCoord.Distance(start, end);
         List<HexCoord> results = new List<HexCoord>();
@@ -244,6 +200,7 @@ public class Pathfinding : MonoBehaviour
             HexCoord roundedHex = lerpHex.Round();
             results.Add(roundedHex);
         }
+        Debug.Log(results);
         return results;
     }
 
@@ -314,7 +271,7 @@ public class Pathfinding : MonoBehaviour
         }
     }
     
-    public Dictionary<HexCoord, int> FindReachableTiles(HexCoord startHex, int maxCost, I_Unit unit, bool playerTeam)
+    public static Dictionary<HexCoord, int> FindReachableTiles(HexCoord startHex, int maxCost, I_Unit unit, bool playerTeam)
     {
         Dictionary<HexCoord, int> reachableTiles = new Dictionary<HexCoord, int>();
         PriorityQueue<ReachableNode> frontier = new PriorityQueue<ReachableNode>();

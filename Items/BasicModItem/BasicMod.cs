@@ -43,4 +43,14 @@ public class BasicMod : I_Mod
         }
         return null;
     }
+
+    public override void OnItemAdded(I_Unit unit)
+    {
+        return;
+    }
+
+    public override void OnItemRemove(I_Unit unit)
+    {
+        return;
+    }
 }

@@ -44,11 +44,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 372ae4ecfa2d9014aba25ba35829a1a5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _baseDamage: 5
+  _baseDamage: 2
   _damageType: 0
   _rarity: 3
   _spriteImage: {fileID: 21300000, guid: 3f97233498daccf4bb7cb3be90b8ee65, type: 3}
-  _description: Massive Damage with a Blast Radius
+  _description: Ammo that leaves the target with radiation poisoning, inflicting
+    damage over time.
   _itemName: Nuclear Ammo
   _itemBlurb: Here Comes The Sun
+  _itemID: -1
   _owner: {fileID: 0}

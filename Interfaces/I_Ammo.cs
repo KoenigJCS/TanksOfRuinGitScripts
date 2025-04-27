@@ -22,9 +22,13 @@ public abstract class I_Ammo : MonoBehaviour, I_Item, I_Damage
     public string itemName { get => _itemName; set => _itemName = value; }
     [SerializeField] string _itemBlurb;
     public string itemBlurb { get => _itemBlurb; set => _itemBlurb = value; }
+    [SerializeField] int _itemID = -1;
+    public int itemID { get => _itemID; set => _itemID = value; }
     [SerializeField] I_Unit _owner;
     public I_Unit owner { get => _owner; set => _owner = value; }
     public int height { get => 0; set {} }
 
     public abstract DamageContext OnDamageEvent(); 
+    public abstract void OnAmmoAdded(I_Unit unit);
+    public abstract void OnAmmoRemoved(I_Unit unit);
 }

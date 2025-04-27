@@ -1,350 +1,307 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using Settworks.Hexagons;
 using Unity.VisualScripting;
 using UnityEngine;
+using Random = System.Random;
 
-public class AIManager : MonoBehaviour
-{
+public class AIManager : MonoBehaviour {
     public static AIManager inst;
     [SerializeField] List<I_Unit> units;
+    private int aiIndex = 0;
+    [SerializeField] List<AIArmy> armies;
+    public List<I_Unit> Units { get { return units; } }
+
+    [SerializeField] private float rotateSpeed = 10f;
+
+    private bool isRotating    = false;
+    private bool enemyIsMoving = false;
+
+    private I_Unit rotatingAttacker;
+    private I_Unit rotatingTarget;
     void Awake() {
         inst = this;
     }
+    private Quaternion attackerDestination;
 
     private void Start() {
+        if (inst == null) inst = this;
         units = new List<I_Unit>();
+    }
+    private Quaternion targetDestination;
+    bool aiTurn = false;
+
+    public void StartBattle() {
+        foreach (GameObject unitGO in ItemManager.inst.aiUnits) {
+            I_Unit unit = unitGO.GetComponent<I_Unit>();
+            unit.hexPosition=TileManager.inst.aiDeploy[^1];
+            TileManager.inst.aiDeploy.RemoveAt(TileManager.inst.aiDeploy.Count-1);
+            unit.Init();
+        }
+    }
+
+    public AIArmy FindAIArmy(Random rand) {
+        int strength = ItemManager.inst.playerUnits.Count*75;
+        strength+= SaveManager.inst.playerSave.currentDifficulty*40;
+        strength+= SaveManager.inst.playerSave.levelCount*10;
+        strength+=rand.Next()%100;
+        AIArmy foundArmy = armies[^1];
+        for(int i = armies.Count-1;i>=0;i--) {
+            foundArmy = armies[i];
+            if(foundArmy.difficulty<=strength) {
+                break;
+            }
+        }
+        Debug.Log(strength);
+        Debug.Log(ItemManager.inst.playerUnits.Count*75);
+        Debug.Log(foundArmy.difficulty);
+        return foundArmy;
     }
     public void AddUnit(I_Unit n_unit) {
         units.Add(n_unit);
     }
     
     public void RemoveUnit(I_Unit n_unit) {
-        if(units.Contains(n_unit)) {
+        if (units.Contains(n_unit))
             units.Remove(n_unit);
-        }
     }
-
-    public void CheckTeamDead() {
-        if(units.Count == 0) {
-            UIManager.inst.EndSceneVictory();
-        }
-    }
-
-    // AITurn function written by Tommy Smith
-    // Commented code was previous edition and should still be considered
-    public void AITurn()
-    {
-        /*Debug.Log("AI Turn Started.");
-        if(units == null || units.Count == 0)
-        {
-            Debug.Log("No AI units to process.");
-            EndTurn();
+    
+    public void AITurn() {
+        if( aiIndex==99 || !aiTurn) {
             return;
         }
 
-        foreach (I_Unit enemyUnit in units)
-        {
-            Debug.Log($"Processing enemy unit: {enemyUnit.name}");
-
-            if (enemyUnit.actionPoints <= 0) {
-                Debug.Log($"Unit {enemyUnit.name} has no action points left.");
-                continue;
-            }
-
-            I_Unit nearestPlayer = GetNearestPlayerUnit(enemyUnit);
-            if (nearestPlayer == null)
-            {
-                Debug.LogWarning($"No nearest player unit found for enemy unit {enemyUnit.name}.");
-                continue;
-            }
-
-            if (Pathfinding.inst == null)
-            {
-                Debug.LogError("Pathfinding.inst is null.");
-                continue;
-            }
-
-            Debug.Log($"Finding path from {enemyUnit.hexPosition} to {nearestPlayer.hexPosition}");
-            HexCoord dest = new();
-            float shortestDistance = float.MaxValue;
-            float currentDistance;
-            foreach (HexCoord neighbor in nearestPlayer.hexPosition.Neighbors())
-            {   
-                I_Tile tile = TileManager.inst.GetTile(neighbor);
-                if(tile == null) {
-                    continue;
-                }
-                if(tile.unitOnTile == null && tile.moveCost<100) {
-                    currentDistance = HexCoord.Distance(enemyUnit.hexPosition, neighbor);
-                    if (currentDistance < shortestDistance)
-                    {
-                        shortestDistance = currentDistance;
-                        dest = tile.index;
-                    }
-                }
-            }
-            List<HexCoord> path = Pathfinding.inst.FindPath(enemyUnit.hexPosition, dest, enemyUnit);
-            
-            if (path == null || path.Count == 0)
-            {
-                Debug.LogWarning($"No path found for enemy unit {enemyUnit.name} to target {nearestPlayer.name}.");
-                continue;
-            }
-
-            Debug.Log($"Path found for unit {enemyUnit.name}: {string.Join(" -> ", path)}");
-
-            int remainingAP = enemyUnit.actionPoints;
-            List<HexCoord> positionsToMove = new List<HexCoord>();
-            
-
-            for (int index = 1; index < path.Count && remainingAP > 0; index++)
-            {
-                HexCoord step = path[index];
-                I_Tile tile = TileManager.inst.GetTile(step);
-                if (tile == null)
-                {
-                    Debug.LogWarning($"Tile at {step} is null. Stopping movement for unit {enemyUnit.name}.");
-                    break;
-                }
-
-                int moveCost = tile.moveCost;
-                if (moveCost > remainingAP)
-                {
-                    Debug.Log($"Not enough AP to move to {step} for unit {enemyUnit.name}. Required: {moveCost}, Available: {remainingAP}");
-                    break;
-                }
-
-                positionsToMove.Add(step);
-                remainingAP -= moveCost;
-            }
-
-            foreach (HexCoord position in positionsToMove)
-            {
-                Debug.Log($"Unit {enemyUnit.name} moving to {position}");
-                enemyUnit.Move(position);
-                enemyUnit.actionPoints -= TileManager.inst.GetTile(position).moveCost;
-            }
-
-            I_Unit[] targets = FindPlayerTargets(enemyUnit);
-            if (targets.Length > 0)
-            {
-                Debug.Log($"Unit {enemyUnit.name} firing at {targets[0].name}");
-                enemyUnit.Fire(targets[0]);
-            }
-            else
-            {
-                Debug.Log($"Unit {enemyUnit.name} found no targets to fire at.");
-            }
-        }
-
-        Debug.Log("AI Turn Ended.");
-        EndTurn();*/
-
-        bool enemyUnitFire(I_Unit enemyUnit, I_Unit[] targetsInRange) {
-            if(targetsInRange.Length == 0) {
-                return false;
-            }
-            Debug.Log($"Unit {enemyUnit.name} firing at {targetsInRange[0].name}");
-            enemyUnit.Fire(targetsInRange[0]);
-            enemyUnit.firePoints -= 1;
-            return true;
-        }
-        
-        Debug.Log("AI Turn Started.");
-        if(units == null || units.Count == 0)
-        {
-            Debug.Log("No AI units to process.");
+        if (aiIndex >= units.Count) {
             EndTurn();
             return;
         }
-
-        foreach (I_Unit enemyUnit in units)
-        {
-            Debug.Log($"Processing enemy unit: {enemyUnit.name}");
-
-            if (enemyUnit.actionPoints <= 0 && enemyUnit.firePoints <= 0) {
-                Debug.Log($"Unit {enemyUnit.name} has no action points left.");
-                continue;
-            }
-
-            I_Unit[] targetsInRange = FindPlayerTargets(enemyUnit);
-            if (targetsInRange.Length > 0 && enemyUnit.firePoints >= 1)
-            {
-                if(enemyUnitFire(enemyUnit,targetsInRange)) {
-                    continue;
-                }
-            }
-
-            I_Unit nearestPlayer = GetNearestPlayerUnit(enemyUnit);
-            if (nearestPlayer == null)
-            {
-                Debug.LogWarning($"No nearest player unit found for enemy unit {enemyUnit.name}.");
-                continue;
-            }
-
-            if (Pathfinding.inst == null)
-            {
-                Debug.LogError("Pathfinding.inst is null.");
-                continue;
-            }
-            
-            HexCoord dest = new();
-            float shortestDistance = float.MaxValue;
-
-            foreach (HexCoord neighbor in nearestPlayer.hexPosition.Neighbors())
-            {   
-                I_Tile tile = TileManager.inst.GetTile(neighbor);
-                if(tile == null) {
-                    continue;
-                }
-                if(tile.unitOnTile == null && tile.moveCost < 100)
-                {
-                    float currentDistance = HexCoord.Distance(enemyUnit.hexPosition, neighbor);
-                    if (currentDistance < shortestDistance)
-                    {
-                        shortestDistance = currentDistance;
-                        dest = tile.index;
-                    }
-                }
-            }
-            
-            if (Math.Abs(shortestDistance - float.MaxValue) < 0.000001f) // checks rough equality of floats
-            {
-                Debug.LogWarning($"No valid destination found for enemy unit {enemyUnit.name}.");
-                continue;
-            }else{
-                Debug.Log($"Destination for enemy unit {enemyUnit.name} is {dest}");
-            }
-
-            List<HexCoord> path = Pathfinding.inst.FindPath(enemyUnit.hexPosition, dest, enemyUnit, enemyUnit.playerControlled);
-            if (path == null || path.Count == 0)
-            {
-                Debug.LogWarning($"No path found for enemy unit {enemyUnit.name} to target {nearestPlayer.name}.");
-                continue;
-            }
-
-            int remainingAP = enemyUnit.actionPoints;
-            List<HexCoord> positionsToMove = new List<HexCoord>();
-
-            for (int index = 1; index < path.Count && remainingAP > 0; index++)
-            {
-                HexCoord step = path[index];
-                I_Tile tile = TileManager.inst.GetTile(step);
-                if (tile == null)
-                {
-                    Debug.LogWarning($"Tile at {step} is null. Stopping movement for unit {enemyUnit.name}.");
-                    break;
-                }
-
-                int moveCost = tile.moveCost;
-                if (moveCost > remainingAP)
-                {
-                    Debug.Log($"Not enough AP to move to {step} for unit {enemyUnit.name}. Required: {moveCost}, Available: {remainingAP}");
-                    break;
-                }
-
-                Debug.Log($"AddingPos: {step.ToString()}");
-                positionsToMove.Add(step);
-                remainingAP -= moveCost;
-            }
-            
-            HexCoord destination = positionsToMove[positionsToMove.Count - 1];
-            I_Tile destTile = TileManager.inst.GetTile(destination);
-
-            if (destTile.unitOnTile != null)
-            {
-                positionsToMove.RemoveAt(positionsToMove.Count - 1);
-            }
-
-            foreach (HexCoord position in positionsToMove)
-            {
-                Debug.Log($"Unit {enemyUnit.name} moving to {position}");
-                enemyUnit.Move(position);
-                enemyUnit.actionPoints -= TileManager.inst.GetTile(position).moveCost;
-            }
-
-            targetsInRange = FindPlayerTargets(enemyUnit);
-            if (targetsInRange.Length > 0 && enemyUnit.firePoints >= 1)
-            {
-                if(enemyUnitFire(enemyUnit,targetsInRange)) {
-                    continue;
-                }
-            }
+        if(enemyIsMoving || isRotating) {
+            return;
         }
-
-        Debug.Log("AI Turn Ended.");
-        EndTurn();
+        I_Unit enemyUnit = units[aiIndex];
+        DoAction(enemyUnit);
     }
-
     public void EndTurn() {
+        foreach (I_Unit unit in units){
+            unit.OnTurnEnd();
+        }
+        foreach (I_Unit unit in Units) {
+            if (unit.repairmanPresent) {
+                unit.health += 5f;
+                if (unit.health > unit.maxHealth) {
+                    unit.health = unit.maxHealth;
+                }
+            }
+        }
+        aiIndex = 99;
+        aiTurn = false;
         PlayerManager.inst.OnTurnStart();
     }
 
     public void OnTurnStart() {
+        aiIndex=0;
+        aiTurn = true;
         foreach (I_Unit unit in units) {
             unit.actionPoints = unit.maxActionPoints;
-            unit.firePoints = unit.maxFirePoints;
-            unit.hasBeenHit = false;
+            unit.firePoints   = unit.maxFirePoints;
+            unit.hasBeenHit   = false;
+
+            if (unit.frozen) {
+                unit.actionPoints--;
+                unit.frozen = false;
+            }
+            if (unit.radiationCounter > 0) {
+                unit.health -= 2;
+                unit.radiationCounter--;
+            }
+            if (unit.radiationCounter <= 0) {
+                unit.radiationCounter = 0;
+            }
+            if (unit.shrapnelJam) {
+                unit.firePoints--;
+                unit.shrapnelJam = false;
+            }
         }
+        aiIndex = 0;
         AITurn();
-    }
-    
-    public I_Unit UnitAt(HexCoord pos) {
-        foreach (I_Unit unit in units) {
-            if(unit.hexPosition == pos) {
-                return unit;
-            }
-        }
-        return null;
-    }
-
-    public I_Unit[] FindTargets(I_Unit sourceUnit, bool playerTeam) {
-        List<I_Unit> targets = new List<I_Unit>();
-        foreach (I_Unit unit in units) {
-            int diff = HexCoord.Distance(sourceUnit.hexPosition,unit.hexPosition);
-            if(diff <= sourceUnit.weaponRange && Pathfinding.inst.LineOfSight(sourceUnit.hexPosition,unit.hexPosition,unit,playerTeam)) {
-                targets.Add(unit);
-            }
-        }
-        return targets.ToArray();
-    }
-
-    I_Unit GetNearestPlayerUnit(I_Unit enemyUnit)
-    {
-        Debug.Log("Finding nearest player unit.");
-        I_Unit nearestPlayer = null;
-        float minDistance = float.MaxValue;
-
-        foreach (I_Unit playerUnit in PlayerManager.inst.Units) {
-            float distance = HexCoord.Distance(enemyUnit.hexPosition, playerUnit.hexPosition);
-            Debug.Log($"Distance from {enemyUnit.name} to {playerUnit.name}: {distance}");
-            if (distance < minDistance)
-            {
-                minDistance = distance;
-                nearestPlayer = playerUnit;
-            }
-        }
-
-        if(nearestPlayer != null)
-            Debug.Log($"Nearest player unit to {enemyUnit.name} is {nearestPlayer.name} at distance {minDistance}");
-        else
-            Debug.LogWarning($"No player units found for {enemyUnit.name}.");
-
-        return nearestPlayer;
     }
 
     public I_Unit[] FindPlayerTargets(I_Unit sourceUnit) {
         List<I_Unit> targets = new List<I_Unit>();
-        foreach (I_Unit unit in PlayerManager.inst.Units)
-        {
+        foreach (I_Unit unit in PlayerManager.inst.Units) {
             int distance = HexCoord.Distance(sourceUnit.hexPosition, unit.hexPosition);
-            if(distance <= sourceUnit.weaponRange && Pathfinding.inst.LineOfSight(sourceUnit.hexPosition,unit.hexPosition,unit,false)) {
+            if(distance <= sourceUnit.weaponRange && Pathfinding.LineOfSight(sourceUnit.hexPosition,unit.hexPosition,sourceUnit,unit,false)) {
                 targets.Add(unit);
             }
         }
         return targets.ToArray();
+    }
+    
+    private void DoAction(I_Unit unit) {
+        bool moved = TryMoveUnit(unit);
+
+        if (!moved && !enemyIsMoving && unit.firePoints>0) {
+            DoFiring(unit);
+        }
+    }
+    private bool TryMoveUnit(I_Unit enemyUnit) {
+        I_Unit nearest = GetNearestPlayerUnit(enemyUnit);
+        if (nearest == null || enemyUnit.actionPoints == 0 || HexCoord.Distance(nearest.hexPosition,enemyUnit.hexPosition) == 1) {
+            return false; 
+        }
+        
+        float shortestDistance = float.MaxValue;
+        HexCoord desiredTile = enemyUnit.hexPosition;
+        foreach (HexCoord neighbor in nearest.hexPosition.Neighbors()) {
+            I_Tile tile = TileManager.inst.GetTile(neighbor);
+            if (tile == null) continue;
+
+            if (tile.unitOnTile == null && tile.moveCost < 100)  {
+                float dist = HexCoord.Distance(enemyUnit.hexPosition, neighbor);
+                if (dist < shortestDistance) {
+                    shortestDistance = dist;
+                    desiredTile = neighbor;
+                }
+            }
+        }
+
+        if (desiredTile == enemyUnit.hexPosition) {
+            return false;
+        }
+
+        List<HexCoord> finalPath = Pathfinding.FindPath(enemyUnit.hexPosition, desiredTile, enemyUnit.playerControlled);
+        if (finalPath == null || finalPath.Count < 1)
+            return false;
+
+        int moveCost = 0;
+        for (int i = 0; i < finalPath.Count; i++) {
+            I_Tile tile = TileManager.inst.GetTile(finalPath[i]);
+            if (tile == null) break;
+            if (moveCost + tile.moveCost > enemyUnit.actionPoints) break;
+            moveCost += tile.moveCost;
+        }
+
+        if (moveCost == 0)
+            return false;
+
+        finalPath.Insert(0,enemyUnit.hexPosition);
+
+        if (!enemyUnit.TryGetComponent(out SplineMovement mover))
+            mover = enemyUnit.gameObject.AddComponent<SplineMovement>();
+
+        enemyIsMoving = true;
+        enemyUnit.actionPoints = 0; // Dont' Move Again
+
+        mover.onMovementComplete = () => {
+
+            HexCoord lastTile = finalPath[^1];
+            enemyUnit.Move(lastTile);
+
+            enemyIsMoving = false;
+
+            mover.onMovementComplete = () => {;};
+
+            DoFiring(enemyUnit);
+        };
+
+        
+        mover.BeginSplineMovement(finalPath);
+        return true; 
+    }
+
+    private void DoFiring(I_Unit enemyUnit) {
+        if (enemyUnit.firePoints <= 0) {
+            aiIndex++;
+            AITurn();
+            return;
+        }
+
+        I_Unit target = PickTargetFor(enemyUnit);
+        if (target == null) {
+            aiIndex++;
+            AITurn();
+            return;
+        }
+        if(!isRotating) {
+            BeginRotateAndFire(enemyUnit, target);
+        }
+    }
+
+
+    private void BeginRotateAndFire(I_Unit attacker, I_Unit target) {
+        rotatingAttacker = attacker;
+        rotatingTarget   = target;
+
+        Vector3 dirA = target.transform.position - attacker.transform.position;
+        dirA.y = 0;
+        attackerDestination = Quaternion.LookRotation(dirA);
+
+        if (!target.hasBeenHit) {
+            Vector3 dirT = (attacker.transform.position - target.transform.position);
+            dirT.y = 0;
+            targetDestination = Quaternion.LookRotation(dirT);
+        }
+        
+        attacker.firePoints-=1;
+
+        isRotating = true; 
+    }
+
+    private bool RotateUnitTowards(I_Unit unit, Quaternion destination) {
+        Quaternion current = unit.model.transform.rotation;
+        Quaternion next = Quaternion.Slerp(current, destination, rotateSpeed * Time.deltaTime);
+        unit.model.transform.rotation = next;
+
+        float angleDiff = Quaternion.Angle(next, destination);
+        if (angleDiff < 0.1f) {
+            unit.model.transform.rotation = destination;
+            return true;
+        }
+        return false;
+    }
+
+    private void Update() {
+        if (enemyIsMoving || aiIndex==99 || !aiTurn) return;
+
+        if (isRotating) {
+            bool aDone = RotateUnitTowards(rotatingAttacker, attackerDestination);
+            bool tDone = true;
+            if (rotatingTarget && !rotatingTarget.hasBeenHit)
+                tDone = RotateUnitTowards(rotatingTarget, targetDestination);
+
+            if (aDone && tDone) {
+                isRotating = false;
+
+                rotatingAttacker.Fire(rotatingTarget);
+                // rotatingAttacker.firePoints--;
+
+                rotatingAttacker = null;
+                rotatingTarget   = null;
+
+                aiIndex++;
+                AITurn();
+            }
+        }
+    }
+
+    private I_Unit PickTargetFor(I_Unit aiUnit) {
+        I_Unit bestTarget = null;
+        float bestDist = float.MaxValue;
+
+        foreach (I_Unit candidate in PlayerManager.inst.Units) {
+            float dist = HexCoord.Distance(aiUnit.hexPosition, candidate.hexPosition);
+            if (dist <= aiUnit.weaponRange) {
+                if (Pathfinding.LineOfSight(aiUnit.hexPosition, candidate.hexPosition, aiUnit, candidate, false)) {
+                    if (dist < bestDist) {
+                        bestDist = dist;
+                        bestTarget = candidate;
+                    }
+                }
+            }
+        }
+        Debug.Log($"[AI] Final picked target = {bestTarget?.name ?? "None"}");
+        return bestTarget;
     }
     
     public void HighlightTargets(I_Unit sourceUnit, bool playerTeam) {
@@ -355,9 +312,48 @@ public class AIManager : MonoBehaviour
         }
     }
 
+    public void CheckWin() {
+        if(units.Count==0) {
+            PlayerManager.inst.uILock=true;
+            UIManager.inst.GameWin();
+        }
+    }
+
+    public I_Unit UnitAt(HexCoord pos) {
+        foreach (I_Unit unit in units) {
+            if (unit.hexPosition == pos)
+                return unit;
+        }
+        return null;
+    }
+
+    private I_Unit GetNearestPlayerUnit(I_Unit aiUnit) {
+        I_Unit nearest = null;
+        float minDist = float.MaxValue;
+        foreach (I_Unit playerU in PlayerManager.inst.Units) {
+            float d = HexCoord.Distance(aiUnit.hexPosition, playerU.hexPosition);
+            if (d < minDist) {
+                minDist = d;
+                nearest = playerU;
+            }
+        }
+        return nearest;
+    }
+
     public void ClearTargets() {
         foreach (I_Unit unit in units) {
             unit.SetModelLayer(0); 
         }
+    }
+
+    public I_Unit[] FindTargets(I_Unit sourceUnit, bool playerTeam) {
+        List<I_Unit> targets = new List<I_Unit>();
+        foreach (I_Unit unit in units) {
+            int diff = HexCoord.Distance(sourceUnit.hexPosition,unit.hexPosition);
+            if(diff <= sourceUnit.weaponRange && Pathfinding.LineOfSight(sourceUnit.hexPosition,unit.hexPosition,sourceUnit,unit,playerTeam)) {
+                targets.Add(unit);
+            }
+        }
+        return targets.ToArray();
     }
 }

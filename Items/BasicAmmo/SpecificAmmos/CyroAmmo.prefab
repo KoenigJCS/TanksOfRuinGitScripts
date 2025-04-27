@@ -44,11 +44,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 66acb88c77503af4281f153500424a75, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _baseDamage: 2.5
-  _damageType: 7
+  _baseDamage: 0.9
+  _damageType: 6
   _rarity: 0
   _spriteImage: {fileID: 21300000, guid: 6c63b9603fea18047af2da89a50e6cb1, type: 3}
   _description: Cryogenic damage that slows enemies down.
   _itemName: Cyro Ammo
   _itemBlurb: Mr Freeze
+  _itemID: -1
   _owner: {fileID: 0}

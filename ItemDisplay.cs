@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using System;
+using Unity.VisualScripting;
 
 public enum ItemDisplayType
 {
@@ -17,6 +18,7 @@ public enum ItemDisplayType
 public class ItemDisplay : MonoBehaviour, IComparable<ItemDisplay>
 {
     [SerializeField] GameObject holder;
+    [SerializeField] GameObject subFrame;
     [SerializeField] TextMeshProUGUI itemName;
     [SerializeField] TextMeshProUGUI itemBlurb;
     [SerializeField] TextMeshProUGUI itemDetailsText;
@@ -27,6 +29,8 @@ public class ItemDisplay : MonoBehaviour, IComparable<ItemDisplay>
     //Dont Set this
     public ItemDisplayType type = ItemDisplayType.InventoryDisplay;
     [SerializeField] UnityEngine.UI.Image frameImage;
+    [SerializeField] UnityEngine.UI.Image rarityImage;
+    
     [SerializeField] bool _isSelected;
     public bool isSelected {
         get {
@@ -44,8 +48,9 @@ public class ItemDisplay : MonoBehaviour, IComparable<ItemDisplay>
     public int order = 0;
     [Header("Debug")]
     [SerializeField] GameObject debugItem;
-    [SerializeField] bool grabRandomItem = false;
-    void Awake() {
+    public bool grabRandomItem = false;
+    public bool grabRandomUnit = false;
+    void Start() {
         Button btn = gameObject.GetComponent<Button>();
         switch (type)
         {
@@ -70,10 +75,15 @@ public class ItemDisplay : MonoBehaviour, IComparable<ItemDisplay>
 
         if(debugItem!=null) {
             SetDisplay(debugItem);
-        } else if(grabRandomItem) {
-            SetDisplay(ItemManager.inst.GenerateRandomItem());
         } else {
             SetDisplay(null);
+        }
+    }
+    public void GenRefresh() {
+        if(grabRandomItem) {
+            SetDisplay(ItemManager.inst.GenerateRandomItem());
+        } else {
+            SetDisplay(ItemManager.inst.GenerateRandomUnit());
         }
     }
 
@@ -92,10 +102,13 @@ public class ItemDisplay : MonoBehaviour, IComparable<ItemDisplay>
             itemBlurb.text = "";
             itemDetailsText.text = "";
             displayItemGO=null;
+            rarityImage.sprite=null;
+            rarityImage.color =new(0,0,0,0);
             return;
         }
         displayItemGO = newDisplay;
         I_Item newDisplayItem = newDisplay.GetComponent<I_Item>();
+        rarityImage.color =new(255,255,255,255);
         if(newDisplayItem is I_Unit newUnit) {
             SetDisplayUnit(newUnit);
         } else {
@@ -107,8 +120,9 @@ public class ItemDisplay : MonoBehaviour, IComparable<ItemDisplay>
         if(!isUnit) {
             holder.GetComponent<UnityEngine.UI.Image>().sprite = null;
             holder.GetComponent<UnityEngine.UI.Image>().color = new Color(0,0,0,0);
-        } else if (displayItem != null) {
-            ((I_Unit)displayItem).isOnDisplay = false;
+            subFrame.GetComponent<UnityEngine.UI.Image>().color = new Color(0,0,0,0);
+        } else if (displayItem != null && displayItem is I_Unit unit) {
+            unit.isOnDisplay = false;
         }
         if(unitModel != null) {
             Destroy(unitModel);
@@ -123,8 +137,18 @@ public class ItemDisplay : MonoBehaviour, IComparable<ItemDisplay>
         displayItem = newItem;
         isUnit=false;
         holder.GetComponent<UnityEngine.UI.Image>().color = new Color(255,255,255,255);
+        if(newItem is I_Mod _) {
+            subFrame.GetComponent<UnityEngine.UI.Image>().color = new Color(255,255,255,255);
+        } else {
+            subFrame.GetComponent<UnityEngine.UI.Image>().color = new Color(0,0,0,0);
+        }
         itemName.text = "<color=\""+I_Item.rarityColor[displayItem.rarity]+"\">"+displayItem.itemName+"</color>";
-        itemBlurb.text = displayItem.itemBlurb;
+        rarityImage.sprite=UIManager.inst.raritySprites[(int)displayItem.rarity];
+        if(type != ItemDisplayType.InventoryDisplay) {
+            itemBlurb.text = displayItem.itemBlurb;
+        } else {
+            itemBlurb.text = "";
+        }
         itemDetailsText.text = displayItem.description;
         holder.GetComponent<UnityEngine.UI.Image>().sprite = displayItem.spriteImage;
     }
@@ -149,6 +173,7 @@ public class ItemDisplay : MonoBehaviour, IComparable<ItemDisplay>
         unitModel.transform.localScale = Vector3.one*12;
         unitModel.transform.localPosition = unitModel.transform.localPosition+(Vector3.down*9);
         itemName.text = "<color=\""+I_Item.rarityColor[displayUnit.rarity]+"\">"+displayUnit.itemName+"</color>";
+        rarityImage.sprite=UIManager.inst.raritySprites[(int)displayUnit.rarity];
         itemBlurb.text = displayUnit.itemBlurb;
         itemDetailsText.text = displayUnit.description;
     }

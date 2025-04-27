@@ -21,12 +21,13 @@ public interface I_Item
     public string itemName {get; set;}
     public string description {get; set;}
     public string itemBlurb {get; set;}
+    public int itemID {get; set;}
     public I_Unit owner {get; set;}
     public static readonly Dictionary<Rarity,String> rarityColor = new Dictionary<Rarity, string> {
-        {Rarity.Common, "black"}, 
-        {Rarity.Uncommon, "blue"}, 
-        {Rarity.Rare, "red"}, 
-        {Rarity.Mythic, "purple"}, 
-        {Rarity.Legendary, "orange"}, 
+        {Rarity.Common, "white"}, 
+        {Rarity.Uncommon, "black"}, 
+        {Rarity.Rare, "blue"}, 
+        {Rarity.Mythic, "red"}, 
+        {Rarity.Legendary, "purple"}, 
 };
 } 

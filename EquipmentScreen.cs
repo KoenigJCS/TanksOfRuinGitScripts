@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Net.Http.Headers;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 public class EquipmentScreen : MonoBehaviour
 {
@@ -9,7 +10,6 @@ public class EquipmentScreen : MonoBehaviour
     [SerializeField] ItemDisplay mainDisplay;
     [SerializeField] ItemDisplay baseAmmoFrame;
     [SerializeReference ]List<ItemDisplay> modFrames = new();
-
     [SerializeField] ItemDisplay gloablInvItem;
     public void HandleItemSwap(ItemDisplay unitInvItem) {
         CleanInvScreen();
@@ -29,17 +29,17 @@ public class EquipmentScreen : MonoBehaviour
             gloablInvItem = unitInvItem;
             unitInvItem = temp;
         }
-        try {
-            print("Gobal: "+gloablInvItem.displayItemGO.name);
-        } catch (System.Exception exept) {
-            print("Global Null+"+exept.ToString());
-        }
+        // try {
+        //     print("Gobal: "+gloablInvItem.displayItemGO.name);
+        // } catch (System.Exception exept) {
+        //     print("Global Null+"+exept.ToString());
+        // }
 
-        try {
-            print(" Unit: "+unitInvItem.displayItemGO.name);
-        } catch (System.Exception exept) {
-            print("Unit Null"+exept.ToString());
-        }
+        // try {
+        //     print(" Unit: "+unitInvItem.displayItemGO.name);
+        // } catch (System.Exception exept) {
+        //     print("Unit Null"+exept.ToString());
+        // }
         
         if(equipUnit==null || gloablInvItem.type == unitInvItem.type) {
             EndItemSwap();
@@ -61,16 +61,23 @@ public class EquipmentScreen : MonoBehaviour
         EndItemSwap();
     }
 
-    void CleanInvScreen() {
+    public void CleanInvScreen() {
         foreach(ItemDisplay itemFrame in ItemManager.inst.invDisplays) {
             itemFrame.SetDisplay(null);
         }
+
+        
+        // Debug.Log($"D Count: {ItemManager.inst.invDisplays.Count}");
+        // Debug.Log($"P Count: {ItemManager.inst.playerItems.Count}");
         for (int i=0,j=0 ;i<ItemManager.inst.playerItems.Count && j<ItemManager.inst.invDisplays.Count;i++) {
             //This is laggy and bad
             if(ItemManager.inst.playerItems[i].GetComponent<I_Item>().owner==null) {
                 ItemManager.inst.invDisplays[j++].SetDisplay(ItemManager.inst.playerItems[i]);
             }
         }
+        if(equipUnit==null) {
+            return;
+        } 
         mainDisplay.SetDisplay(equipUnit.gameObject);
         baseAmmoFrame.SetDisplay(equipUnit.GetUnitAmmoGO());
         I_Mod unitDeco = equipUnit.GetUnitDamageDeco();

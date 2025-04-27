@@ -44,11 +44,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5637aeb671317cf4494943ce84cdc1f9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _baseDamage: 2.75
-  _damageType: 6
+  _baseDamage: 1.5
+  _damageType: 5
   _rarity: 1
   _spriteImage: {fileID: 21300000, guid: 52f382d9c36bd404484bb55ec3f46a19, type: 3}
-  _description: Plasma damage can set tiles on fire.
+  _description: Ammo that can fire an unlimited distance.
   _itemName: Plasma Ammo
-  _itemBlurb: Extra Toasty
+  _itemBlurb: Hey you over there!
+  _itemID: -1
   _owner: {fileID: 0}

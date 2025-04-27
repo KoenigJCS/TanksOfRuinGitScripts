@@ -44,11 +44,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 28a25c48fc663f04bbdf943e92040776, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _baseDamage: 1.75
-  _damageType: 5
+  _baseDamage: 1.1
+  _damageType: 4
   _rarity: 1
   _spriteImage: {fileID: 21300000, guid: 94fa8e359250a79499f6990aadd50821, type: 3}
-  _description: Shrapnel damage can chain dmanage between enemies.
+  _description: Ammo that can potentially cause enemy guns to jam.
   _itemName: Shrapnel Ammo
   _itemBlurb: Power of the Cactus
+  _itemID: -1
   _owner: {fileID: 0}

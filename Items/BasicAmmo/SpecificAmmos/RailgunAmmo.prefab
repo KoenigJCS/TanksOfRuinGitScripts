@@ -44,11 +44,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 415ea4c1499798449baae2e54e0dec4b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _baseDamage: 10
+  _baseDamage: 3
   _damageType: 1
   _rarity: 2
   _spriteImage: {fileID: 21300000, guid: 94ad8f5d7cbc87d4995d0199e0ab6364, type: 3}
-  _description: Massive damage but only on one target.
+  _description: Ammo that inflicts massive damage.
   _itemName: Railgun Ammo
   _itemBlurb: Pure Kenetic Power
+  _itemID: -1
   _owner: {fileID: 0}

@@ -4,6 +4,9 @@ using System.Collections.Generic;
 using Settworks.Hexagons;
 using Unity.VisualScripting;
 using UnityEngine;
+using Random = UnityEngine.Random;
+
+public delegate void AbilityInvocation(I_Item item, I_Unit unit);
 
 public abstract class I_Unit : MonoBehaviour, I_Item
 {
@@ -16,9 +19,23 @@ public abstract class I_Unit : MonoBehaviour, I_Item
     public string description { get => _description; set => _description = value; }
     [SerializeField] string _itemBlurb = "The Most Basic Unit";
     public string itemBlurb { get => _itemBlurb; set => _itemBlurb = value; }
+    [SerializeField] int _itemID = -1;
+    public int itemID { get => _itemID; set => _itemID = value; }
+    [SerializeField] int _unitID = -1;
+    public int unitID { get => _unitID; set => _unitID = value; }
+    [SerializeField] int _baseDamage = 25;
+    public int baseDamage { get => _baseDamage; set => _baseDamage = value; }
+    public float damageFalloff = .15f;
     public I_Unit owner { get => this; set{} }
+    public List<MeshRenderer> meshes = new();
+    public bool isDead = false;
     protected I_Ammo unitAmmo;
     public GameObject GetUnitAmmoGO() {
+        if(unitAmmo==null) {
+            unitAmmo = Instantiate(ItemManager.inst.basicShell,items).GetComponent<I_Ammo>();
+            unitAmmo.owner = this;
+            unitDamageDeco = unitAmmo;
+        }
         return unitAmmo.gameObject;
     }
     protected I_Damage unitDamageDeco;
@@ -45,16 +62,33 @@ public abstract class I_Unit : MonoBehaviour, I_Item
             healthBarActiveState = _isSelected;
             SetHealthBarVis(healthBarActiveState);
             AIManager.inst.ClearTargets();
-            AIManager.inst.HighlightTargets(this,playerControlled);
+            if(firePoints>0) {
+                AIManager.inst.HighlightTargets(this,playerControlled);
+            }
         }
     }
+    public List<Transform> fireTransforms;
     public HexCoord hexPosition;
     public int actionPoints;
     public int maxActionPoints;
     public int firePoints;
     public int maxFirePoints;
+    public bool reloaderPresent = false;
+    public bool repairmanPresent = false;
+    public bool extraEyesPresent = false;
+    public bool thornsPresent = false;
+    public bool frozen = false;
+    public int radiationCounter = 0;
+    public bool shrapnelJam = false;
     public bool hasBeenHit;
+    public Quaternion targetRotation;
+    public bool isRotating = false;
     protected bool healthBarActiveState = false;
+    public bool NOSTankUsed = false;
+    public bool NOSTankEmpty = false;
+    public bool roidsEmpty = false;
+    public bool smiteEmpty = false;
+    public bool smiteUsed = false;
     public float visHealthBarTimer = 0f;
     [SerializeField] float _health;
     public float health {
@@ -63,8 +97,8 @@ public abstract class I_Unit : MonoBehaviour, I_Item
         }
         set {
             _health = value;
-            if(health<=0) {
-                Die();
+            if(health <=0){
+                visHealthBarTimer=0;
                 return;
             } else if (_health>maxHealth) {
                 _health = maxHealth;
@@ -73,6 +107,7 @@ public abstract class I_Unit : MonoBehaviour, I_Item
             healthBar.transform.localPosition = new(healthBar.transform.localPosition.x,healthBar.transform.localPosition.y,-1*(initalZScale/2)*((maxHealth-health)/maxHealth));
         }
     }
+
     public void SetModelLayer(int layer) {
         UIManager.inst.SetLayerAllChildren(model.transform,layer);
     }
@@ -81,7 +116,6 @@ public abstract class I_Unit : MonoBehaviour, I_Item
     public int weaponRange;
     public bool indirectFire = false;
     [Header("Debug")]
-    public bool prePlacedUnInitiated = false;
     public int genNumberOfItems = 0;
     public void Init() {
         SetHealthBarVis(healthBarActiveState);
@@ -99,34 +133,85 @@ public abstract class I_Unit : MonoBehaviour, I_Item
         {
             currentTile.unitOnTile = this;
         }
-        unitAmmo = Instantiate(ItemManager.inst.basicShell,items).GetComponent<I_Ammo>();
-        unitAmmo.owner = this;
-        unitDamageDeco = unitAmmo;
+        if(unitAmmo==null) {
+            unitAmmo = Instantiate(ItemManager.inst.basicShell,items).GetComponent<I_Ammo>();
+            unitAmmo.owner = this;
+            unitDamageDeco = unitAmmo;
+        }
         for(int i = 0; i<genNumberOfItems;i++) {
             AddItem(ItemManager.inst.GenerateRandomItem(true));
         }
-
     }
-    public abstract void Move(HexCoord dest);
+    public abstract void OnTurnEnd();
+    public abstract bool Move(HexCoord dest);
     public abstract void Fire(I_Unit target);
     
-    // TakeDamage function written by Tommy Smith
-    public virtual void TakeDamage(I_Damage damage, I_Unit damageSource) {
-        DamageContext damageContext = damage.OnDamageEvent();
-        
+    public void RotateTowards(I_Unit target)
+    {
         if (!hasBeenHit)
         {
-            Vector3 direction = new Vector3(
-                damageSource.transform.position.x - model.transform.position.x, 
+            Vector3 enemyDirection = new Vector3(
+                target.transform.position.x - transform.position.x, 
                 0, 
-                damageSource.transform.position.z - model.transform.position.z).normalized;
-            model.transform.forward = direction;
+                target.transform.position.z - transform.position.z).normalized;
+
+            targetRotation = Quaternion.LookRotation(enemyDirection);
+            isRotating = true;
+        }
+    }
+    public virtual void TakeDamage(I_Damage damage) {
+        // This is for mines only atm
+        DamageContext dc = damage.OnDamageEvent();
+        foreach (var damagePart in dc.damagePairs) {
+            health -= damagePart.damage;
+        }
+    }
+
+    public virtual void TakeDamage(I_Damage damage, I_Unit damageSource) {
+        DamageContext damageContext = damage.OnDamageEvent();
+        I_Tile tile = TileManager.inst.GetTile(hexPosition);
+        float tileProtection = 1f;
+        if(tile!=null) {
+            tileProtection = tile.CheckProtection(damage,damageSource);
         }
         float damageScalar = IsFlanked(damageSource) ? damageContext.flankMultplier: 1f;
+        float damageDiscount = 1-(damageSource.damageFalloff*(HexCoord.Distance(damageSource.hexPosition,hexPosition)-1));
+        if(damageDiscount<.1f) {
+            damageDiscount=.1f;
+        }
         foreach (var damagePart in damageContext.damagePairs)
         {
-            health -= damagePart.damage * damageScalar;
-            print("Damage is of Type: " + damagePart.damageType+" Multiplied by: "+damageScalar);
+            if (damagePart.damageType == DamageType.Cryo)
+            {
+                frozen = true;
+            }
+            if (damagePart.damageType == DamageType.Nuclear)
+            {
+                radiationCounter = 3;
+            }
+            if (damagePart.damageType == DamageType.Shrapnel)
+            {
+                if (Random.value <= 0.2f)
+                {
+                    shrapnelJam = true;
+                }
+            }
+            if (damagePart.damageType == DamageType.HighExplosive)
+            {
+                List<I_Unit> adjacentUnits = TileManager.inst.GetUnitsOnNeighboringHexes(hexPosition);
+                foreach (I_Unit neighbor in adjacentUnits)
+                {
+                    if (neighbor != null && neighbor != this)
+                    {
+                        neighbor.health -= damagePart.damage * 0.5f;
+                        neighbor.SetHealthBarVis(true);
+                        neighbor.visHealthBarTimer = 2.5f;
+                    }
+                }
+            }
+            float total = damagePart.damage * damageScalar * damageDiscount * damageSource.baseDamage * tileProtection;
+            health-= total;
+            print("Damage of"+damagePart.damage+" is of Type: " + damagePart.damageType+" Multiplied by: "+damageScalar+" and "+tileProtection+" Discounted by: "+damageDiscount+" Totaling: "+ total);
         }
         hasBeenHit = true;
     }
@@ -134,9 +219,8 @@ public abstract class I_Unit : MonoBehaviour, I_Item
         healthBarContainer.SetActive(state);
     }
 
-    // IsFlanked function written by Tommy Smith
     public bool IsFlanked(I_Unit attacker) {
-        if (!hasBeenHit)
+        if (!hasBeenHit || extraEyesPresent)
         {
             return false;
         }
@@ -149,8 +233,6 @@ public abstract class I_Unit : MonoBehaviour, I_Item
         while (angleDifference > 180) {
             angleDifference -= 180;
         }
-        
-        // print(angleDifference);
 
         return angleDifference >= 89.5f;
     }
@@ -168,6 +250,8 @@ public abstract class I_Unit : MonoBehaviour, I_Item
             if(mod == (I_Mod)unitDamageDeco) {
                 unitDamageDeco = mod.damage;
                 ItemManager.inst.TakeBackItem(mod.gameObject);
+                mod.OnItemRemove(this);
+                unitItems.Remove(n_Item);
                 return;
             }
             I_DamageDecorator target = ((I_Mod)unitDamageDeco).RemoveDamageDeco(mod);
@@ -177,12 +261,22 @@ public abstract class I_Unit : MonoBehaviour, I_Item
             ItemManager.inst.TakeBackItem(mod.gameObject);
 
         } else if (n_Item is I_Ammo ammo && ammo == unitAmmo) {
+            unitItems.Remove(n_Item);
+            ammo.OnAmmoRemoved(this);
+            unitItems.Add(n_Item);
             ItemManager.inst.TakeBackItem(unitAmmo.gameObject);
             AddItem(Instantiate(ItemManager.inst.basicShell,items));
         }
     }
 
+    public List<I_Item> unitItems = new(); 
+
     public void AddItem(GameObject n_ItemGO) {
+        if(unitAmmo==null) {
+            unitAmmo = Instantiate(ItemManager.inst.basicShell,items).GetComponent<I_Ammo>();
+            unitAmmo.owner = this;
+            unitDamageDeco = unitAmmo;
+        }
         I_Item n_Item = n_ItemGO.GetComponent<I_Item>(); 
         if(n_Item is I_Mod mod) {
             if(!mod.SetDamageParent(unitDamageDeco)) {
@@ -191,6 +285,8 @@ public abstract class I_Unit : MonoBehaviour, I_Item
             }
             n_Item.owner = this;
             mod.transform.parent = items;
+            unitItems.Add(n_Item);
+            mod.OnItemAdded(this);
             unitDamageDeco = mod;
         } else if (n_Item is I_Ammo ammo) {
             if(unitAmmo is BasicAmmo) {
@@ -207,6 +303,8 @@ public abstract class I_Unit : MonoBehaviour, I_Item
             n_Item.owner = this;
             unitAmmo = ammo;
             ammo.transform.parent = items;
+            ammo.OnAmmoAdded(this);
+            unitItems.Add(n_Item);
         }
     }
 }

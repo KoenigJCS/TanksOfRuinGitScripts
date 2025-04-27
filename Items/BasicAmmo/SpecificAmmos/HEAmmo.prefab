@@ -44,11 +44,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d21407df60174c345aa415587a9a6c63, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _baseDamage: 2.5
-  _damageType: 4
-  _rarity: 0
+  _baseDamage: 1
+  _damageType: 3
+  _rarity: 4
   _spriteImage: {fileID: 21300000, guid: 74989e2e4ecb78c4e9fe0f4b00c1a36c, type: 3}
-  _description: Damage tiles as well as units when firing.
+  _description: Ammo that deals explosive damage which effects enemies in an area.
   _itemName: High Explosive Ammo
-  _itemBlurb: Big Boom
+  _itemBlurb: BRING THE BOOM
+  _itemID: -1
   _owner: {fileID: 0}

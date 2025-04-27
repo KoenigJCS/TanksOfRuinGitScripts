@@ -44,11 +44,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 76e63555fcc7462498b392cf1f79f35b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _baseDamage: 1.75
-  _damageType: 3
+  _baseDamage: 0.9
+  _damageType: 2
   _rarity: 0
   _spriteImage: {fileID: 21300000, guid: 8aac4b37333191f42bbb626c7ae2fe7e, type: 3}
-  _description: Fire damage that is inflicted over time.
+  _description: Flame damage that can set tiles on fire.
   _itemName: Fire Ammo
   _itemBlurb: IT BURNS IT BURNS
+  _itemID: -1
   _owner: {fileID: 0}
